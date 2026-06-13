@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 
-export default function NewCampaignPage() {
+function NewCampaignContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
@@ -375,5 +375,17 @@ export default function NewCampaignPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function NewCampaignPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="animate-pulse text-indigo-400 font-medium">Loading Campaign Wizard...</div>
+      </div>
+    }>
+      <NewCampaignContent />
+    </Suspense>
   )
 }
