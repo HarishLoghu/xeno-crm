@@ -23,11 +23,11 @@ interface CampaignFunnelProps {
 }
 
 const GRADIENT_COLORS = [
-  { main: '#6366f1', light: '#818cf8' },
-  { main: '#7c3aed', light: '#a78bfa' },
-  { main: '#8b5cf6', light: '#c084fc' },
-  { main: '#a855f7', light: '#d8b4fe' },
-  { main: '#10b981', light: '#34d399' },
+  { main: '#3b82f6', light: '#60a5fa' }, // Blue (Sent)
+  { main: '#a855f7', light: '#c084fc' }, // Purple (Delivered)
+  { main: '#22c55e', light: '#4ade80' }, // Green (Opened)
+  { main: '#f97316', light: '#fb923c' }, // Orange (Clicked)
+  { main: '#eab308', light: '#facc15' }, // Gold (Converted)
 ];
 
 export default function CampaignFunnel({ stats }: CampaignFunnelProps) {
@@ -106,8 +106,8 @@ export default function CampaignFunnel({ stats }: CampaignFunnelProps) {
             }}
             labelStyle={{ color: '#f1f5f9', fontWeight: 600, marginBottom: 4 }}
             itemStyle={{ color: '#94a3b8', fontSize: 12 }}
-            formatter={(value: number, _name: string, props: { payload: { pct: number } }) => [
-              `${value.toLocaleString()} (${props.payload.pct}%)`,
+            formatter={(value: any, _name: any, props: any) => [
+              `${Number(value).toLocaleString()} (${props.payload.pct}%)`,
               '',
             ]}
             cursor={{ fill: 'rgba(255,255,255,0.02)' }}
@@ -127,7 +127,7 @@ export default function CampaignFunnel({ stats }: CampaignFunnelProps) {
             <LabelList
               dataKey="pct"
               position="top"
-              formatter={(v: number) => `${v}%`}
+              formatter={(v: any) => `${v}%`}
               style={{
                 fill: '#94a3b8',
                 fontSize: 11,

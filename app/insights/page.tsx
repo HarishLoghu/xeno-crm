@@ -140,6 +140,28 @@ export default function InsightsPage() {
   const countByType = (type: string) =>
     type === "all" ? insights.length : insights.filter(i => i.type === type).length
 
+  const getTabColor = (type: string, active: boolean) => {
+    if (!active) return 'text-slate-500 hover:text-white hover:bg-white/[0.04]';
+    switch (type) {
+      case 'win_back': return 'bg-emerald-500/20 text-emerald-400';
+      case 'cross_sell': return 'bg-purple-500/20 text-purple-400';
+      case 'churn_risk': return 'bg-red-500/20 text-red-400';
+      case 'over_messaging': return 'bg-orange-500/20 text-orange-400';
+      default: return 'bg-white/[0.08] text-white';
+    }
+  };
+
+  const getBadgeColor = (type: string, active: boolean) => {
+    if (!active) return 'bg-white/[0.05] text-slate-500 group-hover:text-slate-300';
+    switch (type) {
+      case 'win_back': return 'bg-emerald-500/30 text-emerald-200';
+      case 'cross_sell': return 'bg-purple-500/30 text-purple-200';
+      case 'churn_risk': return 'bg-red-500/30 text-red-200';
+      case 'over_messaging': return 'bg-orange-500/30 text-orange-200';
+      default: return 'bg-white/[0.15] text-white';
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -164,28 +186,25 @@ export default function InsightsPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-1.5 border-b border-white/[0.06] pb-4 overflow-x-auto">
-        {TAB_CONFIG.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150 whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'bg-white/[0.08] text-white'
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
-            }`}
-          >
-            <span className={activeTab === tab.id ? 'text-indigo-400' : 'text-slate-600'}>
-              {tab.icon}
-            </span>
-            {tab.label}
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-              activeTab === tab.id ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/[0.05] text-slate-600'
-            }`}>
-              {countByType(tab.id)}
-            </span>
-          </button>
-        ))}
+      <div className="flex gap-2 border-b border-white/[0.06] pb-4 overflow-x-auto custom-scrollbar">
+        {TAB_CONFIG.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 whitespace-nowrap ${getTabColor(tab.id, active)}`}
+            >
+              <span className={`opacity-80`}>
+                {tab.icon}
+              </span>
+              {tab.label}
+              <span className={`ml-1 text-[11px] px-2 py-0.5 rounded-lg transition-colors duration-200 ${getBadgeColor(tab.id, active)}`}>
+                {countByType(tab.id)}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Cards Grid */}
@@ -205,6 +224,7 @@ export default function InsightsPage() {
             <InsightCard
               key={insight.id}
               {...insight}
+              type={insight.type as any}
               onDismiss={() => handleDismiss(insight.id)}
               onLaunch={() => handleLaunch(insight.id)}
             />

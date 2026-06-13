@@ -9,21 +9,18 @@ export default function HealthScoreBadge({ score, label }: HealthScoreBadgeProps
   const config = getConfig(label);
 
   return (
-    <span
-      className={`
-        inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
-        border transition-all duration-300
-        ${config.bg} ${config.text} ${config.border}
-        ${config.animation}
-      `}
-    >
-      <span
-        className={`w-1.5 h-1.5 rounded-full ${config.dot}`}
-      />
-      <span>{Math.round(score)}</span>
-      <span className="opacity-70">·</span>
-      <span>{label}</span>
-    </span>
+    <div className="flex flex-col gap-1.5 w-full max-w-[120px]">
+      <div className="flex items-center justify-between text-xs">
+        <span className={`font-semibold ${config.text}`}>{label}</span>
+        <span className="text-slate-400 font-medium">{Math.round(score)}</span>
+      </div>
+      <div className="h-1.5 w-full bg-white/[0.05] rounded-full overflow-hidden">
+        <div 
+          className={`h-full rounded-full ${config.barColor} transition-all duration-1000 ease-out`} 
+          style={{ width: `${Math.max(0, Math.min(100, score))}%` }} 
+        />
+      </div>
+    </div>
   );
 }
 
@@ -32,30 +29,21 @@ function getConfig(label: string) {
 
   if (normalized === 'healthy') {
     return {
-      bg: 'bg-emerald-500/10',
       text: 'text-emerald-400',
-      border: 'border-emerald-500/20',
-      dot: 'bg-emerald-400',
-      animation: '',
+      barColor: 'bg-gradient-to-r from-emerald-500 to-teal-400',
     };
   }
 
   if (normalized === 'atrisk') {
     return {
-      bg: 'bg-orange-500/10',
-      text: 'text-orange-300',
-      border: 'border-orange-500/15',
-      dot: 'bg-orange-400',
-      animation: '',
+      text: 'text-orange-400',
+      barColor: 'bg-gradient-to-r from-orange-500 to-amber-400',
     };
   }
 
   // Burned
   return {
-    bg: 'bg-red-500/10',
-    text: 'text-red-300',
-    border: 'border-red-500/15',
-    dot: 'bg-red-400',
-    animation: '',
+    text: 'text-rose-400',
+    barColor: 'bg-gradient-to-r from-rose-500 to-red-400',
   };
 }

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const healthLabel = searchParams.get('healthLabel')
     const search = searchParams.get('search')
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
-    const limit = Math.min(500, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)))
+    const limit = Math.min(10000, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)))
     const skip = (page - 1) * limit
 
     // Build where clause
@@ -50,8 +50,24 @@ export async function GET(request: NextRequest) {
       prisma.customer.count({ where }),
     ])
 
+    // Get global stats so UI filter tabs match Dashboard
+    const absoluteTotal = await prisma.customer.count()
+    const globalStats = { All: absoluteTotal, Healthy: 0, 'At Risk': 0, Burned: 0 }
+    
+    const allStatsQuery = await prisma.customer.groupBy({
+      by: ['healthLabel'],
+      _count: { id: true },
+    })
+    
+    allStatsQuery.forEach(stat => {
+      if (stat.healthLabel === 'Healthy') globalStats.Healthy = stat._count.id;
+      if (stat.healthLabel === 'At Risk') globalStats['At Risk'] = stat._count.id;
+      if (stat.healthLabel === 'Burned') globalStats.Burned = stat._count.id;
+    })
+
     return NextResponse.json({
       customers,
+      stats: globalStats,
       pagination: {
         page,
         limit,

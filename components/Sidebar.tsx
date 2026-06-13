@@ -131,21 +131,21 @@ export default function Sidebar() {
                 href={item.href}
                 onClick={() => setCollapsed(false)}
                 className={`
-                  relative flex items-center gap-3 px-3 py-2.5 rounded-lg
-                  text-sm font-medium transition-all duration-150
+                  group relative flex items-center gap-3 px-3 py-2.5 rounded-lg
+                  text-sm font-medium transition-all duration-200
                   ${
                     active
-                      ? 'bg-indigo-600/15 text-indigo-300'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                      ? 'bg-gradient-to-r from-violet-600/20 to-transparent text-white'
+                      : 'text-slate-400 hover:text-white hover:bg-white/[0.03]'
                   }
                 `}
               >
                 {/* Active indicator bar */}
                 {active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 rounded-r-full bg-indigo-500" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-gradient-to-b from-[#7C3AED] to-[#2563EB]" />
                 )}
 
-                <span className={`flex-shrink-0 ${active ? 'text-indigo-400' : 'text-slate-500'}`}>
+                <span className={`flex-shrink-0 transition-all duration-300 ${active ? 'text-[#7C3AED] drop-shadow-[0_0_8px_rgba(124,58,237,0.5)]' : 'text-slate-500 group-hover:text-slate-300 group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]'}`}>
                   {item.icon}
                 </span>
                 <span className="text-[13.5px]">{item.label}</span>

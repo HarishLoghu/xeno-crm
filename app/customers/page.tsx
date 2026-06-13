@@ -15,6 +15,7 @@ export default function CustomersPage() {
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [globalStats, setGlobalStats] = useState<Record<string, number>>({ All: 0, Healthy: 0, 'At Risk': 0, Burned: 0 });
   const perPage = 50;
 
   const fetchCustomers = useCallback(async () => {
@@ -34,6 +35,9 @@ export default function CustomersPage() {
           setTotalCount(data.pagination.total);
           setTotalPages(data.pagination.totalPages);
         }
+        if (data.stats) {
+          setGlobalStats(data.stats);
+        }
       }
     } catch (err) {
       console.error('Failed to fetch customers:', err);
@@ -51,10 +55,10 @@ export default function CustomersPage() {
   }, [search, activeTab]);
 
   const tabCounts: Record<TabFilter, number> = {
-    All: customers.filter((c) => activeTab === 'All').length || customers.length,
-    Healthy: customers.filter((c) => c.healthLabel === 'Healthy').length,
-    'At Risk': customers.filter((c) => c.healthLabel === 'At Risk').length,
-    Burned: customers.filter((c) => c.healthLabel === 'Burned').length,
+    All: globalStats.All || 0,
+    Healthy: globalStats.Healthy || 0,
+    'At Risk': globalStats['At Risk'] || 0,
+    Burned: globalStats.Burned || 0,
   };
 
   return (

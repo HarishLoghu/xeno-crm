@@ -81,24 +81,27 @@ export default function CampaignDetailPage() {
       </div>
 
       {campaign.autopsy && (
-        <div className="bg-gradient-to-r from-emerald-900/40 to-indigo-900/40 border border-emerald-500/30 rounded-xl p-6 shadow-[0_0_30px_rgba(16,185,129,0.1)] animate-slide-up">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🤖</span>
-              <h3 className="text-lg font-bold text-emerald-400">AI Campaign Autopsy</h3>
+        <div className="relative p-[1px] rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 animate-slide-up shadow-[0_0_30px_rgba(16,185,129,0.15)] group overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10" />
+          <div className="relative h-full w-full bg-[#11121d] rounded-[11px] p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🤖</span>
+                <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">AI Campaign Autopsy</h3>
+              </div>
+              <button 
+                onClick={async () => {
+                  await fetch(`/api/campaigns/${campaign.id}/autopsy`, { method: 'POST' });
+                }}
+                className="px-3 py-1 bg-emerald-500/10 text-emerald-300 rounded text-xs hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors"
+              >
+                Regenerate Analysis
+              </button>
             </div>
-            <button 
-              onClick={async () => {
-                await fetch(`/api/campaigns/${campaign.id}/autopsy`, { method: 'POST' });
-              }}
-              className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded text-xs hover:bg-emerald-500/30 transition-colors"
-            >
-              Regenerate Analysis
-            </button>
+            <p className="text-emerald-50/90 text-sm leading-relaxed whitespace-pre-line font-medium">
+              {campaign.autopsy}
+            </p>
           </div>
-          <p className="text-emerald-50 text-lg leading-relaxed whitespace-pre-line">
-            {campaign.autopsy}
-          </p>
         </div>
       )}
 
@@ -115,7 +118,9 @@ export default function CampaignDetailPage() {
         </div>
 
         <div className="glass-card p-6 flex flex-col">
-          <h3 className="text-lg font-bold text-white mb-6">Live Feed</h3>
+          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            Live Feed <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
+          </h3>
           <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
             {campaign.communications?.slice(0, 20).map((comm: any) => (
               <div key={comm.id} className="bg-black/20 rounded p-3 text-sm border-l-2 border-white/10 animate-fade-in">

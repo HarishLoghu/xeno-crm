@@ -78,3 +78,30 @@ export async function GET(
     )
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Delete child communications first to satisfy foreign key constraints
+    await prisma.communication.deleteMany({
+      where: { campaignId: id },
+    })
+
+    // Delete the campaign
+    await prisma.campaign.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('[DELETE /api/campaigns/[id]] Error:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete campaign' },
+      { status: 500 }
+    )
+  }
+}

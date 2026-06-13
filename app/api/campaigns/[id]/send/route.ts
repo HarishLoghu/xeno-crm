@@ -203,6 +203,14 @@ function buildWhereClause(
 
   if (!field || !operator) return {}
 
+  const isDateField = field.endsWith('At') || field === 'date';
+  
+  // Safe number parser to avoid passing NaN to Prisma
+  const parseNum = (v: any) => {
+    const num = Number(v);
+    return isNaN(num) ? v : num;
+  };
+
   switch (operator) {
     case 'equals':
       return { [field]: value }
@@ -212,16 +220,16 @@ function buildWhereClause(
       return { [field]: { contains: value, mode: 'insensitive' } }
     case 'gt':
     case 'greater_than':
-      return { [field]: { gt: Number(value) } }
+      return { [field]: { gt: isDateField ? new Date(String(value)) : parseNum(value) } }
     case 'gte':
     case 'greater_than_equals':
-      return { [field]: { gte: Number(value) } }
+      return { [field]: { gte: isDateField ? new Date(String(value)) : parseNum(value) } }
     case 'lt':
     case 'less_than':
-      return { [field]: { lt: Number(value) } }
+      return { [field]: { lt: isDateField ? new Date(String(value)) : parseNum(value) } }
     case 'lte':
     case 'less_than_equals':
-      return { [field]: { lte: Number(value) } }
+      return { [field]: { lte: isDateField ? new Date(String(value)) : parseNum(value) } }
     case 'in':
       return { [field]: { in: Array.isArray(value) ? value : [value] } }
     case 'not_in':

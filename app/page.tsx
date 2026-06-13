@@ -81,7 +81,7 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const [custRes, campRes] = await Promise.all([
-          fetch('/api/customers'),
+          fetch('/api/customers?limit=10000'),
           fetch('/api/campaigns'),
         ]);
 
@@ -123,7 +123,10 @@ export default function DashboardPage() {
   }).length;
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in relative">
+      {/* Subtle animated gradient background */}
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-900/10 via-transparent to-transparent opacity-60 pointer-events-none" />
+
       {/* Header */}
       <div className="pt-2">
         <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
@@ -174,6 +177,7 @@ export default function DashboardPage() {
             value={suppressedToday.toLocaleString()}
             icon="🛡️"
             trendLabel="Protected from fatigue"
+            pulseGreen={suppressedToday > 0}
           />
         </div>
       )}
