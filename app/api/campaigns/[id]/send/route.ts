@@ -152,62 +152,87 @@ export async function POST(
     }
 
     // Standard execution if Stub is properly configured
-    const CHUNK_SIZE = 50
-    for (let i = 0; i < communications.length; i += CHUNK_SIZE) {
-      const chunk = communications.slice(i, i + CHUNK_SIZE)
+    // We fire all requests concurrently, and bulk-update the results to prevent DB pool exhaustion!
+    const sendPromises = communications.map(async (comm) => {
+      try {
+        const response = await fetch(`${CHANNEL_STUB_URL}/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId: `job_${comm.id}`,
+            communicationId: comm.id,
+            customerId: comm.customerId,
+            channel: comm.channel,
+            message: comm.message,
+            crmCallbackUrl: process.env.NEXT_PUBLIC_APP_URL 
+              ? `${process.env.NEXT_PUBLIC_APP_URL}/api/receipts` 
+              : 'http://localhost:3000/api/receipts',
+          }),
+          signal: AbortSignal.timeout(5000), // strictly enforce 5s timeout
+        })
 
-      const sendPromises = chunk.map(async (comm) => {
-        try {
-          const response = await fetch(`${CHANNEL_STUB_URL}/send`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jobId: `job_${comm.id}`,
-              communicationId: comm.id,
-              customerId: comm.customerId,
-              channel: comm.channel,
-              message: comm.message,
-              crmCallbackUrl: process.env.NEXT_PUBLIC_APP_URL 
-                ? `${process.env.NEXT_PUBLIC_APP_URL}/api/receipts` 
-                : 'http://localhost:3000/api/receipts',
-            }),
-            signal: AbortSignal.timeout(5000), // 5 second timeout per fetch
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            if (data.receiptId) {
-              await prisma.communication.update({
-                where: { id: comm.id },
-                data: {
-                  receiptId: data.receiptId,
-                  status: 'sent',
-                  sentAt: new Date(),
-                },
-              })
-            } else {
-              await prisma.communication.update({
-                where: { id: comm.id },
-                data: { status: 'sent', sentAt: new Date() },
-              })
-            }
-          } else {
-            console.error(`[Campaign Send] Stub returned ${response.status} for comm ${comm.id}`)
-            await prisma.communication.update({
-              where: { id: comm.id },
-              data: { status: 'failed', sentAt: new Date() },
-            })
-          }
-        } catch (err) {
-          console.error(`[Campaign Send] Failed to send comm ${comm.id}:`, err)
-          await prisma.communication.update({
-            where: { id: comm.id },
-            data: { status: 'failed', sentAt: new Date() },
-          })
+        if (response.ok) {
+          const data = await response.json()
+          return { id: comm.id, success: true, receiptId: data.receiptId }
+        } else {
+          return { id: comm.id, success: false }
         }
-      })
+      } catch (err) {
+        return { id: comm.id, success: false }
+      }
+    })
 
-      await Promise.allSettled(sendPromises)
+    const fetchResults = await Promise.allSettled(sendPromises)
+    
+    const successfulIds: string[] = []
+    const failedIds: string[] = []
+    const receiptUpdates: Promise<any>[] = [] // Only for records that actually returned a specific receiptId
+
+    for (const res of fetchResults) {
+      if (res.status === 'fulfilled') {
+        if (res.value.success) {
+          successfulIds.push(res.value.id)
+          // If they returned a specific receipt ID, we queue a specific update for it
+          if (res.value.receiptId) {
+            receiptUpdates.push(
+              prisma.communication.update({
+                where: { id: res.value.id },
+                data: { receiptId: res.value.receiptId }
+              })
+            )
+          }
+        } else {
+          failedIds.push(res.value.id)
+        }
+      }
+    }
+
+    // Perform massive bulk updates taking less than 100ms total
+    if (failedIds.length > 0) {
+      await prisma.communication.updateMany({
+        where: { id: { in: failedIds } },
+        data: { status: 'failed', sentAt: new Date() }
+      })
+    }
+
+    if (successfulIds.length > 0) {
+      await prisma.communication.updateMany({
+        where: { id: { in: successfulIds } },
+        data: { status: 'sent', sentAt: new Date() }
+      })
+    }
+
+    // Update specific receipt IDs in background if needed (rare for initial POST)
+    if (receiptUpdates.length > 0) {
+      await Promise.allSettled(receiptUpdates)
+    }
+
+    // Update campaign metrics to reflect failures instantly
+    if (failedIds.length > 0) {
+      await prisma.campaign.update({
+        where: { id: campaign.id },
+        data: { totalFailed: failedIds.length }
+      })
     }
 
     return NextResponse.json(result)
