@@ -1,19 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import prisma from '@/lib/prisma'
 
 const CHANNEL_STUB_URL = process.env.CHANNEL_STUB_URL || 'http://localhost:3001'
+export const maxDuration = 60
 
 /**
  * POST /api/campaigns/[id]/send
  * Trigger a campaign send.
- *
- * Steps:
- * 1. Find all customers matching segmentRule
- * 2. Filter out suppressed customers (healthScore < 40 or messaged 3+ times in 7 days)
- * 3. Create Communication records for each non-suppressed customer
- * 4. Call channel stub for each (POST to CHANNEL_STUB_URL/send)
- * 5. Update campaign status to 'running' and totalSent
- * 6. Return { sent, suppressed, total }
  */
 export async function POST(
   _request: NextRequest,
@@ -104,49 +97,7 @@ export async function POST(
       communications.push(comm)
     }
 
-    // Step 4: Send to channel stub
-    const sendPromises = communications.map(async (comm) => {
-      try {
-        const response = await fetch(`${CHANNEL_STUB_URL}/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobId: `job_${comm.id}`,
-            communicationId: comm.id,
-            customerId: comm.customerId,
-            channel: comm.channel,
-            message: comm.message,
-            crmCallbackUrl: process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/receipts` : 'http://localhost:3000/api/receipts',
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          // Update communication with receipt ID if provided
-          if (data.receiptId) {
-            await prisma.communication.update({
-              where: { id: comm.id },
-              data: {
-                receiptId: data.receiptId,
-                status: 'sent',
-                sentAt: new Date(),
-              },
-            })
-          }
-        }
-      } catch (err) {
-        console.error(`[Campaign Send] Failed to send comm ${comm.id}:`, err)
-        // Mark as sent anyway — the receipt callback will handle status
-        await prisma.communication.update({
-          where: { id: comm.id },
-          data: { status: 'sent', sentAt: new Date() },
-        })
-      }
-    })
-
-    await Promise.allSettled(sendPromises)
-
-    // Step 5: Update campaign status
+    // Update campaign status immediately
     await prisma.campaign.update({
       where: { id: campaign.id },
       data: {
@@ -155,12 +106,58 @@ export async function POST(
       },
     })
 
-    // Step 6: Return results
-    return NextResponse.json({
+    // Return success IMMEDIATELY to prevent Vercel timeout
+    const result = {
       sent: eligible.length,
       suppressed: suppressed.length,
       total: allCustomers.length,
+    }
+
+    // Step 4: Send to channel stub in the background
+    after(async () => {
+      for (const comm of communications) {
+        try {
+          const response = await fetch(`${CHANNEL_STUB_URL}/send`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jobId: `job_${comm.id}`,
+              communicationId: comm.id,
+              customerId: comm.customerId,
+              channel: comm.channel,
+              message: comm.message,
+              crmCallbackUrl: process.env.NEXT_PUBLIC_APP_URL 
+                ? `${process.env.NEXT_PUBLIC_APP_URL}/api/receipts` 
+                : 'http://localhost:3000/api/receipts',
+            }),
+            signal: AbortSignal.timeout(5000), // 5 second timeout per fetch
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            if (data.receiptId) {
+              await prisma.communication.update({
+                where: { id: comm.id },
+                data: {
+                  receiptId: data.receiptId,
+                  status: 'sent',
+                  sentAt: new Date(),
+                },
+              })
+            }
+          }
+        } catch (err) {
+          console.error(`[Campaign Send] Failed to send comm ${comm.id}:`, err)
+          // Mark as sent anyway so it doesn't stay queued forever
+          await prisma.communication.update({
+            where: { id: comm.id },
+            data: { status: 'sent', sentAt: new Date() },
+          })
+        }
+      }
     })
+
+    return NextResponse.json(result)
   } catch (error) {
     console.error('[POST /api/campaigns/[id]/send] Error:', error)
     return NextResponse.json(
