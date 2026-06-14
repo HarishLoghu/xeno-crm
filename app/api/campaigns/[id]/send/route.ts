@@ -82,20 +82,24 @@ export async function POST(
       })
     }
 
-    // Step 3: Create communication records sequentially to avoid connection pool exhaustion
-    const communications: any[] = []
-    for (const customer of eligible) {
-      const comm = await prisma.communication.create({
-        data: {
-          campaignId: campaign.id,
-          customerId: customer.id,
-          channel: campaign.channel,
-          message: personalize(campaign.messageTemplate, customer),
-          status: 'queued',
-        },
-      })
-      communications.push(comm)
-    }
+    // Step 3: Create communication records in bulk to avoid timeout and pool exhaustion
+    await prisma.communication.createMany({
+      data: eligible.map(customer => ({
+        campaignId: campaign.id,
+        customerId: customer.id,
+        channel: campaign.channel,
+        message: personalize(campaign.messageTemplate, customer),
+        status: 'queued',
+      }))
+    })
+
+    // Fetch the newly created records so we have their IDs for the background jobs
+    const communications = await prisma.communication.findMany({
+      where: {
+        campaignId: campaign.id,
+        status: 'queued'
+      }
+    })
 
     // Update campaign status immediately
     await prisma.campaign.update({
