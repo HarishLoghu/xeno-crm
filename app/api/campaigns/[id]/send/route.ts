@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, after } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
 const CHANNEL_STUB_URL = process.env.CHANNEL_STUB_URL || 'http://localhost:3001'
@@ -117,9 +117,14 @@ export async function POST(
       total: allCustomers.length,
     }
 
-    // Step 4: Send to channel stub in the background
-    after(async () => {
-      for (const comm of communications) {
+    // Step 4: Send to channel stub in chunks of 50 to prevent connection pool exhaustion
+    // We MUST await this process. Vercel automatically kills/freezes background tasks 
+    // the millisecond a response is returned if experimental background jobs aren't configured.
+    const CHUNK_SIZE = 50
+    for (let i = 0; i < communications.length; i += CHUNK_SIZE) {
+      const chunk = communications.slice(i, i + CHUNK_SIZE)
+
+      const sendPromises = chunk.map(async (comm) => {
         try {
           const response = await fetch(`${CHANNEL_STUB_URL}/send`, {
             method: 'POST',
@@ -158,9 +163,13 @@ export async function POST(
             data: { status: 'sent', sentAt: new Date() },
           })
         }
-      }
-    })
+      })
 
+      // Wait for the chunk to finish before processing the next 50
+      await Promise.allSettled(sendPromises)
+    }
+
+    // Return success response only after processing completes
     return NextResponse.json(result)
   } catch (error) {
     console.error('[POST /api/campaigns/[id]/send] Error:', error)
