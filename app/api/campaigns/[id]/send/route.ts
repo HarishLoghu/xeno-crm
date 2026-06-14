@@ -83,7 +83,7 @@ export async function POST(
     }
 
     // Step 3: Create communication records sequentially to avoid connection pool exhaustion
-    const communications = []
+    const communications: any[] = []
     for (const customer of eligible) {
       const comm = await prisma.communication.create({
         data: {
