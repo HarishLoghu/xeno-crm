@@ -47,9 +47,9 @@ export default function DashboardPage() {
     {
       id: '1',
       type: 'churn_risk',
-      title: '47 customers haven\u2019t ordered in 90+ days',
+      title: 'High Value Churn Risk',
       description:
-        'These customers were previously active but have gone silent. A targeted win-back campaign with a 10% discount could re-engage them before they churn.',
+        '47 customers were previously active but have gone silent. A targeted win-back campaign with a 10% discount could re-engage them before they churn.',
       segmentData: {},
       dismissed: false,
       createdAt: new Date().toISOString(),
@@ -57,9 +57,9 @@ export default function DashboardPage() {
     {
       id: '2',
       type: 'cross_sell',
-      title: 'Electronics buyers may love accessories',
+      title: 'Cross-sell Window',
       description:
-        'Customers who purchased phones/laptops in the last 30 days are 3.2x more likely to buy accessories. Recommend cases and chargers.',
+        '35 customers who purchased phones/laptops in the last 30 days are 3.2x more likely to buy accessories. Recommend cases and chargers.',
       segmentData: {},
       dismissed: false,
       createdAt: new Date().toISOString(),
@@ -67,9 +67,9 @@ export default function DashboardPage() {
     {
       id: '3',
       type: 'over_messaging',
-      title: '12 customers received 5+ messages this week',
+      title: 'Over-messaging Risk',
       description:
-        'These customers are being over-messaged and may start ignoring communications. Consider suppressing them for the next 48 hours.',
+        '12 customers received 5+ messages this week with zero clicks. Consider suppressing them for the next 48 hours.',
       segmentData: {},
       dismissed: false,
       createdAt: new Date().toISOString(),
