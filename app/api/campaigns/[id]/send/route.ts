@@ -121,7 +121,11 @@ export async function POST(
     // We fire all requests concurrently, and bulk-update the results to prevent DB pool exhaustion!
     const sendPromises = communications.map(async (comm) => {
       try {
-        const response = await fetch(`${CHANNEL_STUB_URL}/send`, {
+        const stubUrl = (CHANNEL_STUB_URL || '').replace(/\/+$/, '')
+        const fullUrl = `${stubUrl}/send`
+        console.log('[SEND] Full URL being called:', fullUrl)
+
+        const response = await fetch(fullUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
