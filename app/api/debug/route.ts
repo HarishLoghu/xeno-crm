@@ -9,12 +9,16 @@ export async function GET() {
     const prisma = new PrismaClient()
     const count = await prisma.customer.count()
     return Response.json({ 
+      channelStubUrl: process.env.CHANNEL_STUB_URL,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL,
       dbUrl: masked, 
       customerCount: count,
       status: 'connected' 
     })
   } catch (error: any) {
     return Response.json({ 
+      channelStubUrl: process.env.CHANNEL_STUB_URL,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL,
       dbUrl: masked, 
       error: error.message,
       status: 'failed' 
