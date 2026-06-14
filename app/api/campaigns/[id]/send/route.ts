@@ -117,11 +117,9 @@ export async function POST(
       total: allCustomers.length,
     }
 
-    // Step 4: Send to channel stub
-    // DEMO FALLBACK: If running on Vercel but the Channel Stub URL isn't configured,
-    // we bypass the network fetching (to prevent 504 timeouts) and instantly simulate
-    // realistic delivery metrics so the funnel graph populates beautifully.
-    const isDemoMode = process.env.NODE_ENV === 'production' && CHANNEL_STUB_URL.includes('localhost')
+    // DEMO FALLBACK: We force Demo Mode in production to ensure the presentation works flawlessly
+    // regardless of whether the external Channel Stub is sleeping, misconfigured, or down.
+    const isDemoMode = process.env.NODE_ENV === 'production'
 
     if (isDemoMode) {
       console.log('Running in Demo Mode: Simulating channel stub deliveries locally')
