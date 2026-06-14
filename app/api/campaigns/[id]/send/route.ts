@@ -153,14 +153,25 @@ export async function POST(
                   sentAt: new Date(),
                 },
               })
+            } else {
+              // Stub accepted it but didn't give receiptId yet
+              await prisma.communication.update({
+                where: { id: comm.id },
+                data: { status: 'sent', sentAt: new Date() },
+              })
             }
+          } else {
+            console.error(`[Campaign Send] Stub returned ${response.status} for comm ${comm.id}`)
+            await prisma.communication.update({
+              where: { id: comm.id },
+              data: { status: 'failed', sentAt: new Date() },
+            })
           }
         } catch (err) {
           console.error(`[Campaign Send] Failed to send comm ${comm.id}:`, err)
-          // Mark as sent anyway so it doesn't stay queued forever
           await prisma.communication.update({
             where: { id: comm.id },
-            data: { status: 'sent', sentAt: new Date() },
+            data: { status: 'failed', sentAt: new Date() },
           })
         }
       })
