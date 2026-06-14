@@ -117,39 +117,7 @@ export async function POST(
       total: allCustomers.length,
     }
 
-    // DEMO FALLBACK: We force Demo Mode in production to ensure the presentation works flawlessly
-    // regardless of whether the external Channel Stub is sleeping, misconfigured, or down.
-    const isDemoMode = process.env.NODE_ENV === 'production'
-
-    if (isDemoMode) {
-      console.log('Running in Demo Mode: Simulating channel stub deliveries locally')
-      const deliveredCount = eligible.length;
-      const openedCount = Math.floor(eligible.length * 0.6);
-      const clickedCount = Math.floor(eligible.length * 0.25);
-
-      await prisma.$transaction(async (tx) => {
-        await tx.campaign.update({
-          where: { id: campaign.id },
-          data: {
-            status: 'running',
-            totalSent: eligible.length,
-            totalDelivered: deliveredCount,
-            totalOpened: openedCount,
-            totalClicked: clickedCount
-          }
-        })
-
-        // Instantly mark communications as delivered for the live feed
-        await tx.communication.updateMany({
-          where: { campaignId: campaign.id },
-          data: { status: 'delivered', sentAt: new Date(), deliveredAt: new Date() }
-        })
-      })
-
-      return NextResponse.json(result)
-    }
-
-    // Standard execution if Stub is properly configured
+    // Standard execution to Channel Stub
     // We fire all requests concurrently, and bulk-update the results to prevent DB pool exhaustion!
     const sendPromises = communications.map(async (comm) => {
       try {
